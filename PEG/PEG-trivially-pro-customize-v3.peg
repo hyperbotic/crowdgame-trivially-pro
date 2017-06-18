@@ -1,0 +1,173 @@
+// http://pegjs.majda.cz/online
+
+{
+  var out = [];
+  var makeProp = function(name, kind, value) {return ({name: name, kind: kind, value: value});}
+  var prependName = function(prop, name) {
+    if (prop.name == null) {
+      prop.name = name
+    }
+    else {
+      prop.name = name + "." + prop.name; 
+    }
+
+    return prop;
+  }
+}
+
+start = t:TopLevel {return out;}
+
+TopLevel = (t1:TopLevel1 {return out.push(t1);}) ("\n" t2:TopLevel1 {return out.push(t2);})*
+
+TopLevel1 = t: (Global / StartPage / QuestionPage / CompletedPage / UtilityPages) {return t;}
+
+Global = (SingleUser / Language / Font / ButtonProps / BorderColor / GeneralLogoProps)
+
+StartPage = "startpage."      p:(PageOptions / StartButton) 
+  {return prependName(p, "startpage");}
+
+QuestionPage = "questionpage."   p: (PageOptions / QuestionPanel / AnswerPanel / ResponsePanels)
+  {return prependName(p, "questionpage");}
+
+CompletedPage = "completedpage." p:(PageOptions / Scoreboard / PlayAgainButton)
+  {return prependName(p, "completedpage");}
+
+UtilityPages = "utilitypage." o:(Background / BorderColor / Font / ButtonProps )
+  {return prependName(o, "utilitypage");}
+
+SingleUser = "singleuser" "=" p: Boolean {return makeProp("singleuser", "Boolean", p);}
+
+Language = "language" "=" p: String {return makeProp("language", "LanguageCode", p);}
+
+AlwaysUpdateImages = "alwaysUpdateImages" "=" p: Boolean {return makeProp("alwaysupdateimages", "Boolean", p);}
+
+PageOptions = p:(Background / Font / Logo1 / Logo2 / ButtonProps / BorderColor / GeneralLogoProps) {return p;}
+
+Boolean = p:("true" {return true;} / "false"{return false;}) {return p;}
+
+Background = (BackgroundColor / BackgroundImage)
+
+BackgroundColor = "backgroundcolor" "=" c:ColorValue {return prependName(makeProp("color", c.kind, c.value), "background");}
+
+BackgroundImage = "backgroundimage" "=" p:URLValue {return prependName(p, "background");}
+
+Logo1 = "logo1." p:LogoProps {return prependName(p, "logo1");}
+Logo2 = "logo2." p:LogoProps {return prependName(p, "logo2");}
+LogoProps = p:(UIProps / Position / Label / Align) {return p;}
+
+// These can be specified at global or page level
+GeneralLogoProps = q:("logo1" / "logo2") "." p:(BorderColor / BackgroundColor / Font / Align / Size / Position) {{return prependName(p, q);}}
+
+StartButton      = "playbutton."      p: (Position / ButtonPropsImplicit) {return prependName(p, "startbutton");}
+Scoreboard       = "scoreboard."      p: (Position / Background / Font / Label) {return prependName(p, "scoreboard");}
+PlayAgainButton  = "playagainbutton." p: (Position / ButtonPropsImplicit) {return prependName(p, "playagainbutton");}
+
+UIProps = p: (Size / BorderColor / Background / Font) {return p;}
+
+QuestionPanel     = "question." p: (UIProps / Offset / Align) {return prependName(p, "question");}
+AnswerPanel       = "answers."  p: (UIProps / Offset) {return prependName(p, "answers");}
+
+ResponsePanels    = p: (CorrectResponse / IncorrectResponse / Answered) {return p;}
+CorrectResponse   = "correct."    p: (UIProps / Offset / Label) {return prependName(p, "correct");}
+IncorrectResponse = "incorrect."  p: (UIProps / Offset / Label) {return prependName(p, "incorrect");}
+Answered          = "response."   p: (UIProps / Offset / Label) {return prependName(p, "response");}
+
+Font = "font." p:(FontSize / FontStyle / FontName / Color) {return prependName(p, "font");}
+FontSize   = "size"   "=" p: Integer {return makeProp("size", "Integer", p);}
+FontStyle  = "style"  "=" p: ("bold" / "italic" / "normal") {return makeProp("style", "String", p);}
+FontName   = "name"   "=" p: String {return makeProp("name", "FontName", p);}
+
+ButtonProps         = "buttons." p:ButtonPropsImplicit {return prependName(p, "buttons");}
+ButtonPropsImplicit = p:(Color / BorderColor / Font) {return p;}
+
+Label    = "text"     "=" p:StringDelim          {return makeProp("text", "StringDelim", p);}
+Position = "position" "=" p:CoordinateSpec       {return prependName(p, "position");}
+Offset   = "offset"   "=" p:CoordinateSpecOffset {return prependName(p, "offset");}
+Size     = "size"     "=" p:SizeSpec             {return prependName(p, "size");}
+
+delim = space
+
+SizeSpec = (p1:Width delim p2:Height) 
+          {return makeProp(null, "Size", [p1, p2]);}
+         / (p2:Height delim p1:Width)
+          {return makeProp(null, "Size", [p1, p2]);}
+
+Width =   p1:"width"  ":" p2:Integer {return {kind: "absolute", dimension: p1, absolute: p2};}
+Height =  p1:"height" ":" p2:Integer {return {kind: "absolute", dimension: p1, absolute: p2};}
+
+CoordinateSpec =
+     (p1:VDimension delim p2:HDimension) 
+      {return makeProp(null, "Coordinate", [p1, p2]);}
+   / (p1:HDimension delim p2:VDimension) 
+      {return makeProp(null, "Coordinate", [p1, p2]);}  
+   / p1:VDimension 
+      {return makeProp(null, "Coordinate", [p1]);}
+   / p2:HDimension
+      {return makeProp(null, "Coordinate", [p2]);}
+
+CoordinateSpecOffset =
+     (p1:VDimensionOffset delim p2:HDimensionOffset) 
+      {return makeProp(null, "Coordinate", [p1, p2]);} 
+   / (p1:HDimensionOffset delim p2:VDimensionOffset) 
+      {return makeProp(null, "Coordinate", [p1, p2]);} 
+   / p1:VDimensionOffset 
+      {return makeProp(null, "Coordinate", [p1]);}
+   / p2:HDimensionOffset
+      {return makeProp(null, "Coordinate", [p2]);}
+
+VDimension = p1: ("top" / "bottom") ":" p2:DimensionSpec {p2.dimension = p1; return p2;}
+HDimension = p1: ("left" / "right") ":" p2:DimensionSpec {p2.dimension = p1; return p2;}
+
+VDimensionOffset = p1: ("top" / "bottom") ":" p2:RelDimension {p2.dimension = p1; return p2;}
+HDimensionOffset = p1: ("left" / "right") ":" p2:RelDimension {p2.dimension = p1; return p2;}
+
+DimensionSpec = p:(Center / AbsDimension / RelDimension / ) {return p;}
+
+RelDimension = p1:("+" / "-") p2:Integer 
+   {return {kind: "relative", relative: (p1 === "-") ? -p2 : p2};}
+
+AbsDimension = p:Integer {return {kind: "absolute", absolute: p};}
+
+Center = "*" {return {kind: "directive", directive: "center"};}
+
+Align = "align" "=" p:("left" / "center" / "right") {return makeProp("align", "Align", p);}
+
+Color             = "color"       "=" c:ColorValue {return makeProp("color", c.kind, c.value);}
+
+BorderColor = "bordercolor" "=" c:ColorValue {return makeProp("bordercolor", c.kind, c.value);}
+
+ColorValue  = ColorRGBInteger / ColorRGBPercentage / ColorHex / ColorName
+
+ColorRGBInteger = ("(" r:Integer space g:Integer space b:Integer ")") 
+  {return {kind: "RGBInteger", value: {r: r, g: g, b: b}};}
+
+ColorRGBPercentage = ("(" r:Integer "%" space g:Integer "%" space b:Integer "%" ")") 
+  {return {kind: "RGBPercentage", value: {r: r, g: g, b: b}};}
+
+ColorHex = ("#" h:HexString) 
+  {return {kind: "Hex", value: h};}
+
+ColorName = p:String
+  {return {kind: "ColorName", value: p};}
+
+// We accept most strings here, in order to provide more informative error message later
+HexString = characters:([A-Z,a-z,0-9]+) {return characters.join("");}
+
+String = characters:[ -~]+ {return characters.join("");}
+
+StringDelim = String_ / ""  {return "";}
+//String_ = characters:[ -~]+ {return characters.join("");}
+String_ = characters:.+ {return characters.join("");}
+
+space = " "
+
+URL = "url" "=" u:URLValue 
+
+URLValue = u:(URLComposed / "none") {return makeProp("url", "URL", u);}
+
+URLComposed = h:("http://" {return "http";} / "https://" {return "https:";}) u:URLText {return h + "://" + u;}
+
+URLText = characters:[!-~]+ {return characters.join("");}
+
+Integer
+  = d:[0-9]+ {return parseInt(d.join(""), 10);}

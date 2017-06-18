@@ -1,0 +1,167 @@
+// http://pegjs.majda.cz/online
+
+{
+  var out = [];
+  var makeProp = function(name, kind, value) {return ({name: name, kind: kind, value: value});}
+  var prependName = function(prop, name) {
+    if (prop.name == null) {
+      prop.name = name
+    }
+    else {
+      prop.name = name + "." + prop.name; 
+    }
+
+    return prop;
+  }
+}
+
+start = t:TopLevel {return out;}
+
+TopLevel = (t1:TopLevel1 {return out.push(t1);}) ("\n" t2:TopLevel1 {return out.push(t2);})*
+
+TopLevel1 = t: (Global / StartPage / QuestionPage / CompletedPage / UtilityPages) {return t;}
+
+Global = (SingleUser / Font / ButtonProps / BorderColor)
+
+StartPage "startpage" = "startpage."      p:(PageOptions / StartButton) 
+  {return prependName(p, "startpage");}
+
+QuestionPage "questionpage" = "questionpage."   p: (PageOptions / QuestionPanel / AnswerPanel / ResponsePanels)
+  {return prependName(p, "questionpage");}
+
+CompletedPage "completedpage" = "completedpage." p:(PageOptions / Scoreboard / PlayAgainButton)
+  {return prependName(p, "completedpage");}
+
+UtilityPages "utilitypage" = "utilitypage." o:(Background / BorderColor / Font / ButtonProps )
+  {return prependName(o, "utilitypage");}
+
+SingleUser "singleuser" = "singleuser" "=" p: Boolean {return makeProp("singleuser", "Boolean", p);}
+
+AlwaysUpdateImages = "alwaysUpdateImages" "=" p: Boolean {return makeProp("alwaysupdateimages", "Boolean", p);}
+
+PageOptions = p:(Background / Font / Logo1 / Logo2 / ButtonProps / BorderColor) {return p;}
+
+Boolean "true or false" = p:("true" {return true;} / "false"{return false;}) {return p;}
+
+Background = p: (BackgroundColor / BackgroundImage) {return prependName(p, "background");}
+
+BackgroundColor "backgroundcolor" = "backgroundcolor" "=" c:ColorValue {return makeProp("color", c.kind, c.value);}
+
+BackgroundImage "backgroundimage" = "backgroundimage" "=" p:URLValue {return p;}
+
+Logo1 "logo1" = "logo1." p:LogoProps {return prependName(p, "logo1");}
+Logo2 "logo2" = "logo2." p:LogoProps {return prependName(p, "logo2");}
+LogoProps = p:(UIProps / Position / Label / Align) {return p;}
+
+StartButton "playbutton"      = "playbutton."      p: (Position / ButtonPropsImplicit) {return prependName(p, "startbutton");}
+Scoreboard "scoreboard"       = "scoreboard."      p: (Position / Background / Font) {return prependName(p, "scoreboard");}
+PlayAgainButton "playagainbutton"  = "playagainbutton." p: (Position / ButtonPropsImplicit) {return prependName(p, "playagainbutton");}
+
+UIProps = p: (Size / BorderColor / Background / Font) {return p;}
+
+QuestionPanel "question"     = "question." p: (UIProps / Offset / Align) {return prependName(p, "question");}
+AnswerPanel "answers"       = "answers."  p: (UIProps / Offset) {return prependName(p, "answers");}
+
+ResponsePanels    = p: (CorrectResponse / IncorrectResponse / Answered) {return p;}
+CorrectResponse "correct"   = "correct."    p: (UIProps / Offset / Label) {return prependName(p, "correct");}
+IncorrectResponse "incorrect" = "incorrect."  p: (UIProps / Offset / Label) {return prependName(p, "incorrect");}
+Answered "response"          = "response."   p: (UIProps / Offset / Label) {return prependName(p, "response");}
+
+Font "font" = "font." p:(FontSize / FontStyle / FontName / Color) {return prependName(p, "font");}
+FontSize "size"   = "size"   "=" p: Integer {return makeProp("size", "Integer", p);}
+FontStyle "style"  = "style"  "=" p: ("bold" / "italic" / "normal") {return makeProp("style", "String", p);}
+FontName "name"   = "name"   "=" p: String {return makeProp("name", "FontName", p);}
+
+ButtonProps "buttons"         = "buttons." p:(Color / BorderColor / Font) {return prependName(p, "buttons");}
+ButtonPropsImplicit = p:(Color / BorderColor / Font) {return prependName(p, "buttons");}
+
+Label "label"    = "text"     "=" p:StringDelim          {return makeProp("text", "StringDelim", p);}
+Position "position" = "position" "=" p:CoordinateSpec       {return prependName(p, "position");}
+Offset   = "offset"   "=" p:CoordinateSpecOffset {return prependName(p, "offset");}
+Size "size"     = "size"     "=" p:SizeSpec             {return prependName(p, "size");}
+
+delim = ("," / space)
+
+SizeSpec = (p1:Width delim p2:Height) 
+          {return makeProp(null, "Size", [p1, p2]);}
+         / (p2:Height delim p1:Width)
+          {return makeProp(null, "Size", [p1, p2]);}
+
+Width "width" =   p1:"width"  ":" p2:Integer {return {kind: "absolute", dimension: p1, absolute: p2};}
+Height "height" =  p1:"height" ":" p2:Integer {return {kind: "absolute", dimension: p1, absolute: p2};}
+
+CoordinateSpec =
+     (p1:VDimension delim p2:HDimension) 
+      {return makeProp(null, "Coordinate", [p1, p2]);}
+   / (p1:HDimension delim p2:VDimension) 
+      {return makeProp(null, "Coordinate", [p1, p2]);}  
+   / p1:VDimension 
+      {return makeProp(null, "Coordinate", [p1]);}
+   / p2:HDimension
+      {return makeProp(null, "Coordinate", [p2]);}
+
+CoordinateSpecOffset =
+     (p1:VDimensionOffset delim p2:HDimensionOffset) 
+      {return makeProp(null, "Coordinate", [p1, p2]);} 
+   / (p1:HDimensionOffset delim p2:VDimensionOffset) 
+      {return makeProp(null, "Coordinate", [p1, p2]);} 
+   / p1:VDimensionOffset 
+      {return makeProp(null, "Coordinate", [p1]);}
+   / p2:HDimensionOffset
+      {return makeProp(null, "Coordinate", [p2]);}
+
+VDimension "top or bottom" = p1: ("top" / "bottom") ":" p2:DimensionSpec {p2.dimension = p1; return p2;}
+HDimension "left or right" = p1: ("left" / "right") ":" p2:DimensionSpec {p2.dimension = p1; return p2;}
+
+VDimensionOffset "top or bottom" = p1: ("top" / "bottom") ":" p2:RelDimension {p2.dimension = p1; return p2;}
+HDimensionOffset "left or right" = p1: ("left" / "right") ":" p2:RelDimension {p2.dimension = p1; return p2;}
+
+DimensionSpec = p:(Center / AbsDimension / RelDimension / ) {return p;}
+
+RelDimension = p1:("+" / "-") p2:Integer 
+   {return {kind: "relative", relative: (p1 === "-") ? -p2 : p2};}
+
+AbsDimension "INTEGER" = p:Integer {return {kind: "absolute", absolute: p};}
+
+Center "*" = "*" {return {kind: "directive", directive: "center"};}
+
+Align "align" = "align" "=" p:("left" / "center" / "right") {return makeProp("align", "Align", p);}
+
+Color "color"             = "color"       "=" c:ColorValue {return makeProp("color", c.kind, c.value);}
+
+BorderColor "bordercolor" = "bordercolor" "=" c:ColorValue {return makeProp("bordercolor", c.kind, c.value);}
+
+ColorValue  = ColorRGBInteger / ColorRGBPercentage / ColorHex / ColorName
+
+ColorRGBInteger "(r g b)" = ("(" space r:Integer space g:Integer space b:Integer space ")") 
+  {return {kind: "RGBInteger", value: {r: r, g: g, b: b}};}
+
+ColorRGBPercentage "(r% g% b%)" = ("(" r:Integer "%" space g:Integer "%" space b:Integer "%" space ")") 
+  {return {kind: "RGBPercentage", value: {r: r, g: g, b: b}};}
+
+ColorHex "#ABCDEF" = ("#" h:HexString) 
+  {return {kind: "Hex", value: h};}
+
+ColorName "COLORNAME" = p:String
+  {return {kind: "ColorName", value: p};}
+
+// We accept most strings here, in order to provide more informative error message later
+HexString = characters:([A-Z,a-z,0-9]+) {return characters.join("");}
+
+String "STRING" = characters:[ -~]+ {return characters.join("");}
+
+StringDelim = String_ / ""  {return "";}
+String_ = characters:[ -~]+ {return characters.join("");}
+
+space "SPACE" = " "*
+
+URL "URL" = "url" "=" u:URLValue 
+
+URLValue = u:URLComposed {return makeProp("url", "URL", u);}
+
+URLComposed "http://URL" = h:("http://" {return "http";} / "https://" {return "https:";}) u:URLText {return h + "://" + u;}
+
+URLText = characters:[!-~]+ {return characters.join("");}
+
+Integer "INTEGER"
+  = d:[0-9]+ {return parseInt(d.join(""), 10);}
