@@ -159,7 +159,7 @@ class Trace
     emailDialog = Ti.UI.createEmailDialog()
 
     emailDialog.subject = "CrowdGame Trivially diagnostic log"
-    emailDialog.toRecipients = ['support@hyperbotic.com']
+    emailDialog.toRecipients = ['??']
     emailDialog.messageBody = "Created on #{(new Date()).toString()} (#{Hy.Config.Version.Console.kConsoleMajorVersion}.#{Hy.Config.Version.Console.kConsoleMinorVersion}.#{Hy.Config.Version.Console.kConsoleMinor2Version})"
     emailDialog.addAttachment(Trace.writeLogFile())
     emailDialog.open()
