@@ -3777,7 +3777,7 @@ class AboutPage extends UtilityPage
     for i in ["copyright1", "copyright2"]
      about.copyright[i] = Hy.Config.Version[i]
 
-    about.contact = "Tap \"Contact\" to visit crowdgame.com or email us: support@crowdgame.com"
+    about.contact = "Tap \"Contact\" to visit ? or email us: ?"
 
     about.logos = {}
     about.logos.crowdgame = "assets/icons/CrowdGame-white.png"
